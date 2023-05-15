@@ -15,7 +15,7 @@ code {
 #root {
   display: grid;
   grid-template-columns: 10% 80% 10%;
-  grid-template-rows: 1fr;
+  grid-template-rows: 100%;
   grid-column-gap: 0px;
   grid-row-gap: 0px;
   background: rgb(113,108,208);
@@ -23,6 +23,5 @@ code {
   background-size: cover;
   background-position: center;
   backdrop-filter: blur(50px);
-  height: 100vh;
 }
   
