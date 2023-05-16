@@ -5,6 +5,8 @@
     grid-column-gap: 0px
     grid-row-gap: 0px
     margin-top: 70px
+    min-height: 80vh
+    padding-top: 5vh
 
 .rest-list__filter
     grid-area: 1 / 1 / 2 / 2
@@ -14,9 +16,9 @@
     background: rgba(226,230,173,0.85)
     backdrop-filter: blur(20px)
     padding: 2vh 2vw
-    width: 50%
-    height: 25vh
-    margin: 8vh auto 3vh
+    width: 60%
+    height: 30vh
+    margin: 3vh auto 3vh
     border-radius: 15px
     .rest-list__btn
         border-radius: 15px
@@ -50,6 +52,11 @@
 
 .rest-list__item__img  
     grid-area: 1 / 1 / 4 / 2 
+    padding: 1vh 1vw 
+    img
+        object-fit: contain
+        width: 100%
+
 .rest-list__item__title 
     grid-area: 1 / 2 / 2 / 3 
     font-size: 20px
@@ -63,6 +70,7 @@
     border-end-start-radius: 4px
 .rest-list__item__descr  
     grid-area: 2 / 2 / 3 / 4 
+    font-size: 14px
 .rest-list__item__address  
     grid-area: 3 / 2 / 4 / 3 
     font-size: 14px

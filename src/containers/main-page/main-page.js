@@ -20,7 +20,7 @@ function MainPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [displayedRestaurants, setDisplayedRestaurants] = useState([]);
   const [searchName, setSearchName] = useState('');
-  const cardsPerPage = 4;
+  const cardsPerPage = 3;
 
   useEffect(() => {
     fetchData();

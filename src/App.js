@@ -3,7 +3,8 @@ import './App.css';
 import { BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import LoginRegisterSwitch from './containers/login-page/login-page';
 import MainPage from './containers/main-page/main-page';
-import RestPage from './containers/main-page/rest-page/rest-page';
+import RestPage from './containers/rest-page/rest-page';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   return (
