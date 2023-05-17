@@ -62,7 +62,7 @@ function RestPage() {
         .filter((dish) => dish.count >= 1)
         .map((dish) => ({ id: dish.id, count: dish.count })),
       total_price,
-      data: formattedDate // Добавление свойства data с днем заказа
+      data: currentDate // Добавление свойства data с днем заказа
     };
   
     console.log(order); // Вывод объекта заказа в консоль (для тестирования)
@@ -109,7 +109,11 @@ function RestPage() {
           <a href={formatEmail(restaurant.email)}>{restaurant.email}</a>
         </div>
         <div className="rest-info__rating">{restaurant.rating}</div>
+        <button className="rest-info__btn">
+          Забронювати стіл
+        </button>
       </div>
+      
       <div className="rest-img-slider__wrapper">
         <Carousel interval={10000}>
           {restaurant.photos &&
