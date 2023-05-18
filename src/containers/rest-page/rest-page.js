@@ -73,7 +73,7 @@ function RestPage({ tableDate }) {
   const uniqueCategories = [...new Set(dishes.map((dish) => dish.category))];
 
   const handleOrder = () => {
-    const user = 'your_user_id'; // Замените на фактический id пользователя
+    const user = '645fee2c71912c47e8fffdfd'; // Замените на фактический id пользователя
 
     // Получение текущей даты
     const currentDate = new Date();
@@ -88,7 +88,14 @@ function RestPage({ tableDate }) {
       data: tableDate || currentDate, // Используем переданную дату, если она есть, иначе используем текущую дату
     };
 
-    console.log(order); // Вывод объекта заказа в консоль (для тестирования)
+    axios.post('http://localhost:3002/order/one', order)
+    .then(response => {
+      console.log(response.data); // Обработка ответа от сервера
+    })
+    .catch(error => {
+      console.error(error); // Обработка ошибок при отправке запроса
+    });
+// Вывод объекта заказа в консоль (для тестирования)
     // Отправка заказа на сервер - добавьте соответствующий код здесь
   };
 
@@ -141,6 +148,9 @@ function RestPage({ tableDate }) {
               onChange={(newDate) => handleDateChange(newDate)}
             />
           </LocalizationProvider>
+          <div className="tables__wrappper">
+            
+          </div>
           <Button onClick={closeModal}>Закрити</Button>
         </div>
       </Modal>
