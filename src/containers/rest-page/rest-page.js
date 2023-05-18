@@ -1,18 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { Accordion, AccordionSummary, AccordionDetails, Typography } from '@mui/material';
+import { Accordion, AccordionSummary, AccordionDetails, Typography, Button, Modal } from '@mui/material';
 import { ExpandMore } from '@mui/icons-material';
 import Header from '../../components/header/header';
 import Carousel from 'react-bootstrap/Carousel';
 import DishCard from './dish-card/dish-card';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { useLocation } from 'react-router-dom';
+import queryString from 'query-string';
+
 import './rest-page.sass';
 
-function RestPage() {
+function RestPage({ tableDate }) {
   const { id } = useParams();
+  const location = useLocation();
+  const queryParams = queryString.parse(location.search);
   const [restaurant, setRestaurant] = useState({});
   const [dishes, setDishes] = useState([]);
   const [total_price, settotal_price] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(dayjs(queryParams.date));
+ 
+  
+
+  const openModal = () => {
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,7 +74,7 @@ function RestPage() {
 
   const handleOrder = () => {
     const user = 'your_user_id'; // Замените на фактический id пользователя
-  
+
     // Получение текущей даты
     const currentDate = new Date();
     const year = currentDate.getFullYear();
@@ -58,17 +83,14 @@ function RestPage() {
     const formattedDate = `${year}-${month}-${day}`;
     const order = {
       user,
-      dishes: dishes
-        .filter((dish) => dish.count >= 1)
-        .map((dish) => ({ id: dish.id, count: dish.count })),
+      dishes: dishes.filter((dish) => dish.count >= 1).map((dish) => ({ id: dish.id, count: dish.count })),
       total_price,
-      data: currentDate // Добавление свойства data с днем заказа
+      data: tableDate || currentDate, // Используем переданную дату, если она есть, иначе используем текущую дату
     };
-  
+
     console.log(order); // Вывод объекта заказа в консоль (для тестирования)
     // Отправка заказа на сервер - добавьте соответствующий код здесь
   };
-  
 
   const handleCountChange = (dishId, dishCount) => {
     setDishes((prevDishes) =>
@@ -81,7 +103,6 @@ function RestPage() {
     );
   };
 
-
   useEffect(() => {
     const total_price = dishes.reduce((total, dish) => {
       return total + dish.price * dish.count;
@@ -89,11 +110,9 @@ function RestPage() {
     settotal_price(total_price);
   }, [dishes]);
 
-
-
   return (
     <>
-      <Header page='rest' />
+      <Header page="rest" />
       <div className="rest-info__wrapper">
         <div className="rest-info__name">{restaurant.name}</div>
         <div className="rest-info__descr">{restaurant.description}</div>
@@ -109,11 +128,23 @@ function RestPage() {
           <a href={formatEmail(restaurant.email)}>{restaurant.email}</a>
         </div>
         <div className="rest-info__rating">{restaurant.rating}</div>
-        <button className="rest-info__btn">
+        <button className="rest-info__btn" variant="contained" onClick={openModal}>
           Забронювати стіл
         </button>
       </div>
-      
+      <Modal open={modalVisible} onClose={closeModal}>
+        <div className="modal__content">
+          <h2>Бронювання столика</h2>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              value={selectedDate}
+              onChange={(newDate) => handleDateChange(newDate)}
+            />
+          </LocalizationProvider>
+          <Button onClick={closeModal}>Закрити</Button>
+        </div>
+      </Modal>
+
       <div className="rest-img-slider__wrapper">
         <Carousel interval={10000}>
           {restaurant.photos &&
@@ -126,6 +157,7 @@ function RestPage() {
       </div>
       {dishes.length > 0 && (
         <div className="dish-cards__wrapper accordion-container">
+          <span className="menu-title">Menu:</span>
           {uniqueCategories.map((category) => (
             <Accordion key={category}>
               <AccordionSummary expandIcon={<ExpandMore />} aria-controls={`${category}-content`} id={`${category}-header`}>
@@ -144,19 +176,20 @@ function RestPage() {
                           handleCountChange={handleCountChange}
                           dishCount={dishCopy.count} // Замените dishCopy.count на dishCount
                         />
-
                       );
                     })}
                 </div>
               </AccordionDetails>
             </Accordion>
           ))}
+          <div className="order__wrapper">
+            <div className="rest-info__total-price">Total Price: {total_price}</div>
+            <button className="rest-info__btn order__btn" variant="contained" onClick={handleOrder}>
+              Order
+            </button>
+          </div>
         </div>
       )}
-      <button className="rest-info__btn" onClick={handleOrder}>
-        Order
-      </button>
-      <div className="rest-info__total-price">Total Price: {total_price}</div>
     </>
   );
 }

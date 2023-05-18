@@ -85,7 +85,7 @@ function MainPage() {
         <ul className="rest-list">
           {displayedRestaurants.length > 0 ? (
             displayedRestaurants.map((restaurant) => (
-              <Link style={{ all: 'unset' }} key={restaurant._id} to={`/restaurant/${restaurant._id}`}>
+              <Link style={{ all: 'unset' }} key={restaurant._id} to={`/restaurant/${restaurant._id}?date=${value}`}>
                 <RestCard
                   key={restaurant._id}
                   photos={restaurant.photos[0]}
@@ -95,16 +95,17 @@ function MainPage() {
                   rating={restaurant.rating}
                 />
               </Link>
+
             ))
           ) : (
             <p>Результатів не знайдено</p>
           )}
           <Pagination
-          count={Math.ceil(totalFilteredRestaurants / cardsPerPage)}
-          page={currentPage}
-          onChange={handlePageChange}
-          color="primary"
-        />
+            count={Math.ceil(totalFilteredRestaurants / cardsPerPage)}
+            page={currentPage}
+            onChange={handlePageChange}
+            color="primary"
+          />
         </ul>
       </div>
       <Footer />
