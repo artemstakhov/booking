@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
   Accordion,
@@ -20,7 +20,6 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import './rest-page.sass';
 import Cookies from 'js-cookie';
@@ -36,8 +35,7 @@ function RestPage({ tableDate }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(dayjs(queryParams.date));
   const [tables, setTables] = useState([]);
-  const [selectedTable, setSelectedTable] = useState('');
-
+  const [message, setMessage] = useState ('');
   const openModal = () => {
     setModalVisible(true);
   };
@@ -70,21 +68,21 @@ function RestPage({ tableDate }) {
     fetchData();
   }, [id]);
 
+  const fetchTables = async () => {
+    try {
+      const tableResponses = await Promise.all(
+        restaurant.tables.map((tableId) => axios.get(`http://localhost:3002/table/${tableId}`))
+      );
+      const tableData = tableResponses.map((res) => res.data);
+      setTables(tableData);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
   useEffect(() => {
-    const fetchTables = async () => {
-      try {
-        const tableResponses = await Promise.all(
-          restaurant.tables.map((tableId) => axios.get(`http://localhost:3002/table/${tableId}`))
-        );
-        const tableData = tableResponses.map((res) => res.data);
-        setTables(tableData);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
     fetchTables();
-  }, [restaurant.tables]);
+  }, [restaurant.tables,selectedDate]);
 
   const openGoogleMaps = () => {
     const address = encodeURIComponent(restaurant.address);
@@ -98,41 +96,47 @@ function RestPage({ tableDate }) {
   };
 
   const uniqueCategories = [...new Set(dishes.map((dish) => dish.category))];
-  
+
   const handleOrder = () => {
     const token = Cookies.get('access_token');
     const userId = decodeToken(token);
-    console.log(token);
-    console.log(userId);
-    const user = userId;  // Замените на фактический id пользователя
+    const user = userId;  // Replace with the actual user ID
 
-    // Получение текущей даты
+    // Get current date
     const currentDate = new Date();
     const year = currentDate.getFullYear();
     const month = String(currentDate.getMonth() + 1).padStart(2, '0');
     const day = String(currentDate.getDate()).padStart(2, '0');
     const formattedDate = `${year}-${month}-${day}`;
 
-        const order = {
-          user: user,
-          dishes: dishes.filter((dish) => dish.count >= 1).map((dish) => ({ id: dish.id, count: dish.count })),
-          total_price,
-          data: tableDate || currentDate, // Используем переданную дату, если она есть, иначе используем текущую дату
-        };
-        console.log(order);
-         // Получите токен из куки
+    const order = {
+      user: user,
+      dishes: dishes.filter((dish) => dish.count >= 1).map((dish) => ({ id: dish.id, count: dish.count })),
+      total_price,
+      data: tableDate || currentDate, // Use the passed date if available, otherwise use the current date
+    };
 
-        axios.post(`http://localhost:3002/order/one`, order, {
-          headers: {
-            Authorization: `${token}`,
-          }})
-      .then(response => {
-        console.log(response.data); // Обработка ответа от сервера
+    axios
+      .post(`http://localhost:3002/order/one`, order, {
+        headers: {
+          Authorization: `${token}`,
+        },
       })
-      .catch(error => {
-        console.error(error); // Обработка ошибок при отправке запроса
+      .then((response) => {
+        console.log(response.data); // Handle server response
+
+        // Reset dish count values to 0
+        setDishes((prevDishes) =>
+          prevDishes.map((prevDish) => {
+            return { ...prevDish, count: 0 };
+          })
+        );
+      })
+      .catch((error) => {
+        console.error(error); // Handle request errors
       });
   };
+
 
   const handleCountChange = (dishId, dishCount) => {
     setDishes((prevDishes) =>
@@ -152,31 +156,57 @@ function RestPage({ tableDate }) {
     setTotalPrice(total_price.toFixed(2));
   }, [dishes]);
 
-  const [selectedTableNumber, setSelectedTableNumber] = useState('');
-  
-  const handleTableChange = (event) => {
-    setSelectedTable(event.target.value);
-  };
-  
 
+  const [selectedTable, setSelectedTable] = useState(null);
 
-  const handleReservation = () => {
-    const selectedTableData = tables.find((table) =>
-      table.tableNumbers.some((tableNumber) => tableNumber.number === selectedTable)
-    );
-    console.log("Selected Table:", selectedTable);
-    console.log("Tables:", tables);
-  
-    if (selectedTableData) {
-      const selectedTableNumberObj = selectedTableData.tableNumbers.find((tableNumber) => tableNumber.number === selectedTable);
-      const selectedTableId = selectedTableNumberObj ? selectedTableNumberObj.id : null;
-      console.log("Selected table:", selectedTableData);
-      console.log("Table ID:", selectedTableId);
-      setSelectedTable(selectedTableNumberObj); // Update the state with the selected table data
-      // Perform the reservation logic here
+  const handleReservation = (date) => {
+    const selectedDay = selectedDate.startOf('day').format('YYYY-MM-DD');
+    const token = Cookies.get('access_token');
+    if (selectedTable) {
+      // Находим объект номера стола по выбранному номеру
+      const selectedTableNumberObject = tables
+        .flatMap((table) => table.tableNumbers)
+        .find((tableNumber) => tableNumber.number === selectedTable);
+      if (selectedTableNumberObject) {
+        console.log('Номер стола:', selectedTable);
+        // Берем ID номера стола из объекта
+        const tableId = selectedTableNumberObject._id;
+        console.log('ID стола:', tableId);
+        // Формируем объект для обновления данных на сервере
+        const tableUpdate = {
+          id: tableId,
+          dates: date,
+        };
+        console.log('Дата:', date);
+        axios
+          .put(`http://localhost:3002/table/availability`, tableUpdate, {
+            headers: {
+              Authorization: `${token}`,
+            },
+          })
+          .then((response) => {
+            console.log(response.data);
+            // Handle server response
+            // Reset dish count values to
+            setMessage('Ви успішно забронювали стіл!');
+            setTimeout(() =>{closeModal()}, 4000);
+            fetchTables(); // Первый вызов fetchTables
+          })
+          .catch((error) => {
+            console.error(error);
+            // Handle request errors
+          });
+        fetchTables();
+      }
     }
   };
-  
+
+  const isDateUnavailable = (table, selectedDate) => {
+    const selectedDay = selectedDate.startOf('day').format('YYYY-MM-DD');
+    return table.unavailableDates.some(date => date.startsWith(selectedDay));
+  };
+
+
 
   return (
     <>
@@ -202,29 +232,38 @@ function RestPage({ tableDate }) {
       </div>
       <Modal open={modalVisible} onClose={closeModal}>
         <div className="modal__content">
-          <div className="tables__modal__wrapper"><h2>Бронювання столика</h2>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker value={selectedDate} onChange={(newDate) => handleDateChange(newDate)} />
-          </LocalizationProvider>
-          <div className="tables__wrapper">
-            {tables.map((table) => (
-              <div key={table.id}>
-                <Typography variant="subtitle1">Кількість людей {table.capacity}</Typography>
-                <RadioGroup aria-label="table" name="table" value={selectedTable} onChange={handleTableChange}>
-                  {table.tableNumbers.map((tableNumber) => (
-                    <FormControlLabel
-                      key={tableNumber.number}
-                      value={tableNumber.number}
-                      control={<Radio />}
-                      label={tableNumber.number}
-                    />
-                  ))}
-                </RadioGroup>
-                <Button variant="contained" onClick={handleReservation}>
-                  Забронювати
-                </Button>
-              </div>
-            ))}
+          <div className="tables__modal__wrapper">
+            <h2>Бронювання столика</h2>
+            <p>{message}</p>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker value={selectedDate} onChange={(newDate) => handleDateChange(newDate)} />
+            </LocalizationProvider>
+            <div className="tables__wrapper">
+              {tables.map((table) => (
+                <div className='table_id' key={table._id}>
+                  <Typography variant="subtitle1">Кількість людей {table.capacity}</Typography>
+                  <RadioGroup aria-label="table" name="table">
+                    {table.tableNumbers.map((tableNumber) => {
+                      const isUnavailable = isDateUnavailable(tableNumber, selectedDate);
+                      return (
+                        !isUnavailable && (
+                          <FormControlLabel
+                            key={tableNumber._id}
+                            value={tableNumber.number}
+                            control={<Radio />}
+                            label={tableNumber.number}
+                            checked={selectedTable === tableNumber.number}
+                            onChange={() => setSelectedTable(tableNumber.number)}
+                          />
+                        )
+                      );
+                    })}
+                  </RadioGroup>
+                </div>
+              ))}
+              <Button variant="contained" onClick={() => handleReservation(selectedDate)} disabled={!selectedTable}>
+                Забронювати
+              </Button>
             </div>
           </div>
           <Button onClick={closeModal}>Закрити</Button>
@@ -260,7 +299,7 @@ function RestPage({ tableDate }) {
                           key={dishCopy.id}
                           dish={dishCopy}
                           handleCountChange={handleCountChange}
-                          dishCount={dishCopy.count} // Замените dishCopy.count на dishCount
+                          dishCount={dishCopy.count} // Replace dishCopy.count with dishCount
                         />
                       );
                     })}
