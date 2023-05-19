@@ -53,20 +53,26 @@ function RestPage({ tableDate }) {
       try {
         const restaurantResponse = await axios.get(`http://localhost:3002/restaurant/${id}`);
         setRestaurant(restaurantResponse.data);
-
         const dishResponses = await Promise.all(
-          restaurantResponse.data.dishes.map((dishId) => axios.get(`http://localhost:3002/dish/${dishId}`))
+          restaurantResponse.data.dishes.map(dishId => axios.get(`http://localhost:3002/dish/${dishId}`))
         );
-        const dishData = dishResponses.map((res) => ({ ...res.data, id: res.data._id, count: 0 }));
-
+        const dishData = dishResponses
+        .map((res) => ({
+          ...res.data,
+          id: res.data._id,
+          count: 0
+        }));
+  
         setDishes(dishData);
       } catch (error) {
         console.error(error);
       }
     };
-
+  
     fetchData();
   }, [id]);
+  
+  
 
   const fetchTables = async () => {
     try {
@@ -111,11 +117,11 @@ function RestPage({ tableDate }) {
 
     const order = {
       user: user,
-      dishes: dishes.filter((dish) => dish.count >= 1).map((dish) => ({ id: dish.id, count: dish.count })),
+      dishes: dishes.filter((dish) => dish.count >= 1).map((dish) => ({ dish_id: dish.id, count: dish.count, _id: user })),
       total_price,
-      data: tableDate || currentDate, // Use the passed date if available, otherwise use the current date
+      date: tableDate || currentDate, // Use the passed date if available, otherwise use the current date
     };
-
+    if(order.total_price>0){
     axios
       .post(`http://localhost:3002/order/one`, order, {
         headers: {
@@ -135,6 +141,7 @@ function RestPage({ tableDate }) {
       .catch((error) => {
         console.error(error); // Handle request errors
       });
+    }
   };
 
 
@@ -189,7 +196,7 @@ function RestPage({ tableDate }) {
             // Handle server response
             // Reset dish count values to
             setMessage('Ви успішно забронювали стіл!');
-            setTimeout(() =>{closeModal()}, 4000);
+            setTimeout(() =>{closeModal()}, 2000);
             fetchTables(); // Первый вызов fetchTables
           })
           .catch((error) => {

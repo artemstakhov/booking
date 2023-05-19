@@ -4,6 +4,7 @@ import Cookies from 'js-cookie';
 import './login-page.sass';
 import Header from '../../components/header/header';
 import { Link, useNavigate } from 'react-router-dom';
+import { decodeToken } from 'react-jwt';
 
 const LoginRegisterSwitch = () => {
   const [isLoginForm, setisLoginForm] = useState(false);
@@ -59,7 +60,8 @@ const LoginForm = () => {
     //   Cookies.set('access_token', token, { expires: 1 });
 
       event.target.reset();
-      navigate('/');
+
+      decodeToken(Cookies.get('access_token')).isAdmin ? navigate('/admin') : navigate('/');
     } catch (error) {
       console.error(error);
     }
