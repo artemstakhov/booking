@@ -18,7 +18,7 @@ function App() {
           <Route exact path="/" element={<MainPage />} />
           <Route exact path="/restaurant/:id" element={<RestPage />} />
           <Route path='/login' element={<LoginRegisterSwitch />} />
-          <Route path='/admin' element={decodeToken(Cookies.get('access_token')).isAdmin && <AdminPage />} />
+          <Route path='/admin' element={decodeToken(Cookies.get('access_token'))?.isAdmin && <AdminPage />} />
         </Routes>
     </Router>
     </div>

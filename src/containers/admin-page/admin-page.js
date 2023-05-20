@@ -60,6 +60,7 @@ function AdminPage() {
     const [value, setValue] = useState(0);
     const [orders, setOrders] = useState([]);
     const [dishes, setDishes] = useState([]);
+    const [tables, setTables] = useState([]);
     const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
     const [selectedDishId, setSelectedDishId] = useState('');
     const [editModalOpen, setEditModalOpen] = useState(false);
@@ -84,7 +85,7 @@ function AdminPage() {
         image: '',
         created_at: new Date()
     });
-    
+
     const [restaurants, setRestaurants] = useState([{}]);
     const [createDishRestaurant, setCreateDishRestaurant] = useState('');
     const restaurantOptions = restaurants.map((restaurant) => (
@@ -102,7 +103,6 @@ function AdminPage() {
         setEditModalOpen(false);
         setSelectedDishIdForEdit('');
     };
-
     const openCreateModal = (dishId) => {
         setCreateModalOpen(true);
     };
@@ -129,7 +129,7 @@ function AdminPage() {
             console.log('Created');
             fetchDishes();
             closeCreateModal();
-            
+
         } catch (error) {
             console.error(error);
         }
@@ -143,6 +143,7 @@ function AdminPage() {
         fetchOrders();
         fetchDishes();
         fetchRestaurants();
+        fetchTables(); 
     }, []);
 
     const fetchOrders = async () => {
@@ -155,6 +156,14 @@ function AdminPage() {
         }
     };
 
+    const fetchTables = async () => {
+        try {
+            const response = await axios.get('http://localhost:3002/table');
+            setTables(response.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
     const fetchDishes = async () => {
         try {
             const response = await axios.get('http://localhost:3002/dish');
@@ -176,26 +185,25 @@ function AdminPage() {
     const findRestaurantByDishId = (restaurants, dishId) => {
         const restaurant = restaurants.find(restaurant => restaurant.dishes.some(dish => dish === dishId));
         return restaurant ? restaurant._id : null;
-      };
-      
-      const handleDishDelete = async (dishId) => {
+    };
+
+    const handleDishDelete = async (dishId) => {
         try {
-          await fetchRestaurants(); // Дождаться обновления restaurants
-          const restaurantId = findRestaurantByDishId(restaurants, dishId);
-          if (restaurantId) {
-            await axios.delete(`http://localhost:3002/dish/delete/${dishId}`, { data: { id: restaurantId } });
-            console.log(restaurantId);
-            console.log('Deleted');
-            fetchDishes();
-          } else {
-            console.log('Restaurant not found');
-          }
+            await fetchRestaurants(); // Дождаться обновления restaurants
+            const restaurantId = findRestaurantByDishId(restaurants, dishId);
+            if (restaurantId) {
+                await axios.delete(`http://localhost:3002/dish/delete/${dishId}`, { data: { id: restaurantId } });
+                console.log('Deleted');
+                fetchDishes();
+            } else {
+                console.log('Restaurant not found');
+            }
         } catch (error) {
-          console.error(error);
-          // Handle delete error
+            console.error(error);
+            // Handle delete error
         }
-      };
-      
+    };
+
 
     const openDeleteConfirmation = (dishId) => {
         setSelectedDishId(dishId);
@@ -311,8 +319,201 @@ function AdminPage() {
             ]
         }));
     };
+    const [deleteConfirmationOpenRest, setDeleteConfirmationOpenRest] = useState(false);
+    const [selectedRestId, setSelectedRestId] = useState('');
+    const [editModalOpenRest, setEditModalOpenRest] = useState(false);
+    const [selectedRestIdForEdit, setSelectedRestIdForEdit] = useState('');
+    const [restDataEdit, setRestDataEdit] = useState({
+        photos: []
+    });
+    const [restDataCreate, setRestDataCreate] =useState({
+    name: '',
+    description: '',
+    address: '',
+    phone: 0,
+    email: '',
+    rating: '',
+    photos: ['',''],
+    tables: [],
+    dishes: [],
+    reviews: [],
+    });  
+    const [createRestDish, setCreateRestDish] = useState('');
+    const dishOptions = dishes.map((dish) => (
+        <MenuItem key={dish._id} value={dish._id}>
+            {dish.name}
+        </MenuItem>
+    ));
+    const [createRestTable, setCreateRestTable] = useState('');
+    const tableOptions = tables.map((table) => (
+        <MenuItem key={table._id} value={table._id}>
+            Місць - {table.capacity}  Столів - {table.tableNumbers.length} 
+        </MenuItem>
+    ));
+    const [createModalOpenRest, setCreateModalOpenRest] = useState(false);
+    const openCreateModalRest = (dishId) => {
+        setCreateModalOpenRest(true);
+    };
 
-    
+    const closeCreateModalRest = () => {
+        setCreateModalOpenRest(false);
+    };
+
+    const handleRestDelete = async (restId) => {
+        try {// Дождаться обновления restaurants
+
+            await axios.delete(`http://localhost:3002/restaurant/delete/${restId}`);
+            console.log('Rest deleted');
+            fetchRestaurants();
+
+        } catch (error) {
+            console.error(error);
+            // Handle delete error
+        }
+    };
+
+    const openDeleteConfirmationRest = (restId) => {
+        setSelectedRestId(restId);
+        setDeleteConfirmationOpenRest(true);
+    };
+
+    const closeDeleteConfirmationRest = () => {
+        setDeleteConfirmationOpenRest(false);
+        setSelectedRestId('');
+    };
+
+    const confirmDeleteRest = () => {
+        handleRestDelete(selectedRestId);
+        closeDeleteConfirmationRest();
+        fetchRestaurants();
+    };
+
+    const openEditModalRest = (RestId) => {
+        fetchRestEdit();
+        setSelectedRestIdForEdit(RestId);
+        setEditModalOpenRest(true);
+        
+    };
+
+    const closeEditModalRest = () => {
+        setEditModalOpenRest(false);
+        setSelectedRestIdForEdit('');
+    };
+
+    const fetchRestEdit = async () => {
+        try {
+            const response = await axios.get(`http://localhost:3002/restaurant/${selectedRestIdForEdit}`);
+            setRestDataEdit(response.data);
+        } catch (error) {
+            console.error(error);
+            // Handle fetch error
+        }
+    };
+
+    const handleInputChangeRest = (event, field) => {
+        setRestDataEdit((prevData) => ({
+            ...prevData,
+            [field]: event.target.value,
+        }));
+    };
+
+    const handlePhotoChangeEdit = (event, index) => {
+        const { value } = event.target;
+        setRestDataEdit((prevData) => {
+            const updatedPhotos = [...prevData.photos];
+            updatedPhotos[index] = value;
+            return {
+                ...prevData,
+                photos: updatedPhotos,
+            };
+        });
+    };
+
+    const addPhotoEdit = () => {
+        setRestDataEdit((prevData) => ({
+            ...prevData,
+            photos: [...prevData.photos, ''],
+        }));
+    };
+
+    const deletePhotoEdit = (index) => {
+        setRestDataEdit((prevData) => {
+            const photos = [...prevData.photos];
+            photos.splice(index, 1);
+            return {
+                ...prevData,
+                photos,
+            };
+        });
+    };
+
+
+    const handleInputChangeRestCreate = (event, field) => {
+        setRestDataCreate((prevData) => ({
+            ...prevData,
+            [field]: event.target.value,
+        }));
+    };
+
+    const handlePhotoChangeCreate = (event, index) => {
+        const { value } = event.target;
+        setDishDataCreate((prevData) => {
+          const updatedPhotos = [...prevData.photos];
+          updatedPhotos[index] = value;
+          return {
+            ...prevData,
+            photos: updatedPhotos,
+          };
+        });
+      };
+      
+
+    const addPhotoCreate = () => {
+        setRestDataCreate((prevData) => ({
+            ...prevData,
+            photos: [...prevData.photos, ''],
+        }));
+    };
+
+    const deletePhotoCreate = (index) => {
+        setRestDataCreate((prevData) => {
+            const photos = [...prevData.photos];
+            photos.splice(index, 1);
+            return {
+                ...prevData,
+                photos,
+            };
+        });
+    };
+    useEffect(() => {
+        if (selectedRestIdForEdit) {
+            fetchRestEdit();
+        }
+    }, [selectedRestIdForEdit]);
+
+    const confirmEditRest = async () => {
+        try {
+            await axios.patch(`http://localhost:3002/restaurant/update/${selectedRestIdForEdit}`, restDataEdit);
+            console.log('Changed rest');
+            closeEditModalRest();
+        } catch (error) {
+            console.error(error);
+            // Handle edit error
+        }
+    };
+
+    const confirmCreateRest = async () => {
+        console.log(restDataCreate)
+        try {
+            await axios.post(`http://localhost:3002/restaurant/new`, restDataCreate);
+            console.log('Created');
+            fetchRestaurants();
+            closeCreateModalRest();
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
 
     return (
         <>
@@ -364,7 +565,7 @@ function AdminPage() {
                                 </li>
                             ))}
                     </ul>
-                    <Button onClick={() => {openCreateModal()}}>Create Dish</Button>
+                    <Button onClick={() => { openCreateModal() }}>Create Dish</Button>
                     <Modal open={editModalOpen} onClose={closeEditModal}>
                         <div className="modal__content__edit">
                             <div className="modal__edit">
@@ -575,7 +776,207 @@ function AdminPage() {
                 </div>
             </TabPanel>
             <TabPanel value={value} index={2}>
-                {/* Restaurants content */}
+                <div>
+                    <ul className="rest__list">
+                        {restaurants &&
+                            restaurants.map((rest, index) => (
+                                <li key={rest._id}>
+                                    <span className="rest__title">
+                                        {index + 1} {rest.name}{' '}
+                                        <span className="rest__icons">
+                                            <FontAwesomeIcon icon={faTrash} onClick={() => openDeleteConfirmationRest(rest._id)} />
+                                            <FontAwesomeIcon icon={faPencil} onClick={() => openEditModalRest(rest._id)} />
+                                        </span>
+                                    </span>
+                                </li>
+                            ))}
+                    </ul>
+                    <Button onClick={() => { openCreateModalRest() }}>Create Restaurant</Button>
+                    <Modal open={editModalOpenRest} onClose={closeEditModalRest}>
+                        <div className="modal__content__edit">
+                            <div className="modal__edit">
+                                <FormControl>
+                                    <InputLabel shrink>Name</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.name}
+                                        onChange={(event) => handleInputChangeRest(event, "name")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Description</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.description}
+                                        onChange={(event) => handleInputChangeRest(event, "description")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Address</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.address}
+                                        onChange={(event) => handleInputChangeRest(event, "address")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Phone</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.phone}
+                                        onChange={(event) => handleInputChangeRest(event, "phone")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Email</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.email}
+                                        onChange={(event) => handleInputChangeRest(event, "email")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Rating</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.rating}
+                                        onChange={(event) => handleInputChangeRest(event, "rating")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                {restDataEdit.photos?.map((photo, index) => (
+                                    <div key={photo} className='ingredient__wrappper'>
+                                        <FormControl>
+                                            <InputLabel shrink>{`Photo ${index + 1} Name`}</InputLabel>
+                                            <TextField
+                                                label={`Photo ${index + 1} Name`}
+                                                value={photo}
+                                                onChange={(event) => handlePhotoChangeEdit(event, index)}
+                                                required
+                                            />
+                                        </FormControl>
+                                        <Button onClick={(event) => deletePhotoEdit(event,index)}><FontAwesomeIcon icon={faTrash} /></Button>
+                                    </div>
+                                ))}
+
+                                <Button variant="contained" color="primary" onClick={addPhotoEdit}>
+                                    Add Photo
+                                </Button>
+
+                                <Button variant="contained" color="primary" onClick={confirmEditRest}>
+                                    Change
+                                </Button>
+                            </div>
+                        </div>
+                    </Modal>
+                    <Modal open={createModalOpenRest} onClose={closeCreateModalRest}>
+                        <div className="modal__content__edit">
+                            <div className="modal__edit">
+                                <FormControl>
+                                    <InputLabel shrink>Name</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.name}
+                                        onChange={(event) => handleInputChangeRestCreate(event, "name")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Description</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.description}
+                                        onChange={(event) => handleInputChangeRestCreate(event, "description")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Address</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.address}
+                                        onChange={(event) => handleInputChangeRestCreate(event, "address")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Phone</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.phone}
+                                        onChange={(event) => handleInputChangeRestCreate(event, "phone")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Email</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.email}
+                                        onChange={(event) => handleInputChangeRestCreate(event, "email")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Rating</InputLabel>
+                                    <TextField
+                                        value={restDataEdit.rating}
+                                        onChange={(event) => handleInputChangeRestCreate(event, "rating")}
+                                        required
+                                    />
+                                </FormControl>
+                                <Select value={createRestDish} onChange={(event) => setCreateRestDish(event.target.value)}>
+                                    {dishOptions}
+                                </Select>
+                                <Select value={createRestTable} onChange={(event) => setCreateRestTable(event.target.value)}>
+                                    {tableOptions}
+                                </Select>
+                                
+                                {restDataCreate.photos.length > 0 && restDataCreate.photos.map((photo, index) => (
+                                    <div key={photo} className='ingredient__wrappper'>
+                                        <FormControl>
+                                            <InputLabel shrink>{`Photo ${index + 1} Name`}</InputLabel>
+                                            <TextField
+                                                label={`Photo ${index + 1} Name`}
+                                                value={photo}
+                                                onChange={(event) => handlePhotoChangeCreate(event, index)}
+                                                required
+                                            />
+                                        </FormControl>
+                                        <Button onClick={(event) => deletePhotoCreate(event,index)}><FontAwesomeIcon icon={faTrash} /></Button>
+                                    </div>
+                                ))}
+
+                                <Button variant="contained" color="primary" onClick={addPhotoCreate}>
+                                    Add Photo
+                                </Button>
+
+                                <Button variant="contained" color="primary" onClick={confirmCreateRest}>
+                                    Create
+                                </Button>
+                            </div>
+                        </div>
+                    </Modal>
+                    <Dialog open={deleteConfirmationOpenRest} onClose={closeDeleteConfirmationRest}>
+                        <DialogTitle>Confirmation</DialogTitle>
+                        <DialogContent>
+                            <Typography>Are you sure you want to delete this restaurant?</Typography>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={closeDeleteConfirmationRest} color="primary">
+                                Cancel
+                            </Button>
+                            <Button onClick={confirmDeleteRest} color="primary" autoFocus>
+                                Delete
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                </div>
             </TabPanel>
             <TabPanel value={value} index={3}>
                 {/* Tables content */}
