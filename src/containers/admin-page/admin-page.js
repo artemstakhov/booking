@@ -14,10 +14,13 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem
+    MenuItem,
+    InputAdornment,
+    IconButton
 } from '@mui/material';
 import Header from '../../components/header/header';
 import axios from 'axios';
+
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencil } from '@fortawesome/free-solid-svg-icons';
@@ -143,7 +146,7 @@ function AdminPage() {
         fetchOrders();
         fetchDishes();
         fetchRestaurants();
-        fetchTables(); 
+        fetchTables();
     }, []);
 
     const fetchOrders = async () => {
@@ -326,18 +329,18 @@ function AdminPage() {
     const [restDataEdit, setRestDataEdit] = useState({
         photos: []
     });
-    const [restDataCreate, setRestDataCreate] =useState({
-    name: '',
-    description: '',
-    address: '',
-    phone: 0,
-    email: '',
-    rating: '',
-    photos: ['',''],
-    tables: [],
-    dishes: [],
-    reviews: [],
-    });  
+    const [restDataCreate, setRestDataCreate] = useState({
+        name: '',
+        description: '',
+        address: '',
+        phone: 0,
+        email: '',
+        rating: '',
+        photos: ['', ''],
+        tables: [],
+        dishes: [],
+        reviews: [],
+    });
     const [createRestDish, setCreateRestDish] = useState('');
     const dishOptions = dishes.map((dish) => (
         <MenuItem key={dish._id} value={dish._id}>
@@ -347,7 +350,7 @@ function AdminPage() {
     const [createRestTable, setCreateRestTable] = useState('');
     const tableOptions = tables.map((table) => (
         <MenuItem key={table._id} value={table._id}>
-            Місць - {table.capacity}  Столів - {table.tableNumbers.length} 
+            Місць - {table.capacity}  Столів - {table.tableNumbers.length}
         </MenuItem>
     ));
     const [createModalOpenRest, setCreateModalOpenRest] = useState(false);
@@ -392,7 +395,7 @@ function AdminPage() {
         fetchRestEdit();
         setSelectedRestIdForEdit(RestId);
         setEditModalOpenRest(true);
-        
+
     };
 
     const closeEditModalRest = () => {
@@ -457,16 +460,16 @@ function AdminPage() {
 
     const handlePhotoChangeCreate = (event, index) => {
         const { value } = event.target;
-        setDishDataCreate((prevData) => {
-          const updatedPhotos = [...prevData.photos];
-          updatedPhotos[index] = value;
-          return {
-            ...prevData,
-            photos: updatedPhotos,
-          };
+        setRestDataCreate((prevData) => {
+            const updatedPhotos = [...prevData?.photos];
+            updatedPhotos[index] = value;
+            return {
+                ...prevData,
+                photos: updatedPhotos,
+            };
         });
-      };
-      
+    };;
+
 
     const addPhotoCreate = () => {
         setRestDataCreate((prevData) => ({
@@ -509,6 +512,255 @@ function AdminPage() {
             console.log('Created');
             fetchRestaurants();
             closeCreateModalRest();
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const [editModalOpenTable, setEditModalOpenTable] = useState(false);
+    const [tableDataEdit, setTableDataEdit] = useState({
+        isReserved: false,
+        tableNumbers: [
+            {
+                unavailableDates: []
+            }
+        ],
+        updatedAt: new Date(),
+        __v: 0
+    });
+    const [tableDataCreate, setTableDataCreate] = useState({
+        isReserved: false,
+        capacity: 0,
+        tableNumbers: [
+            {
+                number: 0,
+                unavailableDates: []
+            }
+        ],
+        updatedAt: new Date(),
+        createdAt: new Date(),
+        __v: 0
+    });
+    const [deleteConfirmationOpenTable, setDeleteConfirmationOpenTable] = useState(false);
+    const [selectedTableId, setSelectedTableId] = useState('');
+    const [selectedTableIdForEdit, setSelectedTableIdForEdit] = useState('');
+    const [createModalOpenTable, setCreateModalOpenTable] = useState(false);
+    const [createTableRestaurant, setCreateTableRestaurant] = useState('');
+    const restOptionsTable = restaurants.map((restaurant) => (
+        <MenuItem key={restaurant._id} value={restaurant._id}>
+            {restaurant.name}
+        </MenuItem>
+    ));
+    const openDeleteConfirmationTable = (tableId) => {
+        setSelectedTableId(tableId);
+        setDeleteConfirmationOpenTable(true);
+    };
+
+    const closeDeleteConfirmationTable = () => {
+        setDeleteConfirmationOpenTable(false);
+        setSelectedTableId('');
+    };
+
+    const confirmDeleteTable = () => {
+        handleTableDelete(selectedTableId);
+        closeDeleteConfirmationTable();
+        fetchTables();
+    };
+
+    const openEditModalTable = async (TableId) => {
+        setSelectedTableIdForEdit(TableId);
+        fetchTableEdit(TableId);
+        setEditModalOpenTable(true);
+
+
+    };
+
+    const closeEditModalTable = () => {
+        setCreateModalOpenTable(false);
+    };
+
+    const openCreateModalTable = async (TableId) => {
+        setCreateModalOpenTable(true);
+
+
+    };
+
+    const closeCreateModalTable = () => {
+        setEditModalOpenTable(false);
+    };
+    const fetchTableEdit = async (TableId) => {
+        try {
+            const response = await axios.get(`http://localhost:3002/table/${TableId}`);
+            setTableDataEdit(response.data);
+        } catch (error) {
+            console.error(error);
+            // Handle fetch error
+        }
+    };
+
+    const handleInputChangeTable = (event, field) => {
+        setTableDataEdit((prevData) => ({
+            ...prevData,
+            [field]: event.target.value,
+        }));
+    };
+
+
+    const handleInputChangeTableCreate = (event, field) => {
+        setTableDataCreate((prevData) => ({
+            ...prevData,
+            [field]: event.target.value,
+        }));
+    };
+
+
+    const handleTableChangeTable = (event, index, property) => {
+        const { value } = event.target;
+        setTableDataEdit((prevData) => {
+            const updatedTables = [...prevData.tableNumbers];
+            updatedTables[index] = {
+                ...updatedTables[index],
+                [property]: value
+            };
+            return {
+                ...prevData,
+                tableNumbers: updatedTables
+            };
+        });
+    };
+
+    const handleTableChangeTableCreate = (event, index, property) => {
+        const { value } = event.target;
+        setTableDataCreate((prevData) => {
+            const updatedTables = [...prevData.tableNumbers];
+            updatedTables[index] = {
+                ...updatedTables[index],
+                [property]: value
+            };
+            return {
+                ...prevData,
+                tableNumbers: updatedTables
+            };
+        });
+    };
+
+    const addSmallTable = () => {
+        setTableDataEdit((prevData) => ({
+            ...prevData,
+            tableNumbers: [
+                ...prevData.tableNumbers,
+                { _id: '', number: 0, unavailableDates: [] }
+            ]
+        }));
+    };
+
+    const deleteSmallTable = (index) => {
+        setTableDataEdit((prevData) => {
+            const tableNumbers = [...prevData.tableNumbers];
+            tableNumbers.splice(index, 1);
+            return {
+                ...prevData,
+                tableNumbers,
+            };
+        });
+    };
+
+    const deleteDate = (tableIndex, dateIndex) => {
+        setTableDataEdit((prevData) => {
+            const tableNumbers = [...prevData.tableNumbers];
+            const table = tableNumbers[tableIndex];
+            table.unavailableDates.splice(dateIndex, 1);
+            return {
+                ...prevData,
+                tableNumbers,
+            };
+        });
+    };
+
+    const addSmallTableCreate = () => {
+        setTableDataCreate((prevData) => ({
+            ...prevData,
+            tableNumbers: [
+                ...prevData.tableNumbers,
+                { _id: '', number: 0, unavailableDates: [] }
+            ]
+        }));
+    };
+
+    const deleteSmallTableCreate = (index) => {
+        setTableDataCreate((prevData) => {
+            const tableNumbers = [...prevData.tableNumbers];
+            tableNumbers.splice(index, 1);
+            return {
+                ...prevData,
+                tableNumbers,
+            };
+        });
+    };
+
+    const deleteDateCreate = (tableIndex, dateIndex) => {
+        setTableDataCreate((prevData) => {
+            const tableNumbers = [...prevData.tableNumbers];
+            const table = tableNumbers[tableIndex];
+            table.unavailableDates.splice(dateIndex, 1);
+            return {
+                ...prevData,
+                tableNumbers,
+            };
+        });
+    };
+
+
+    const findRestaurantByTableId = (restaurants, tableId) => {
+        const restaurant = restaurants.find(restaurant => restaurant.tables.some(table => table === tableId));
+        return restaurant ? restaurant._id : null;
+    };
+    const handleTableDelete = async (tableId) => {
+        try {
+            await fetchRestaurants(); // Дождаться обновления restaurants
+            const restaurantId = findRestaurantByTableId(restaurants, tableId);
+            if (restaurantId) {
+                await axios.delete(`http://localhost:3002/table/${tableId}`, { data: { id: restaurantId } });
+                console.log('Deleted');
+                fetchTables();
+            } else {
+                console.log('Restaurant not found');
+            }
+        } catch (error) {
+            console.error(error);
+            // Handle delete error
+        }
+    };
+
+
+    const confirmEditTable = async () => {
+        console.log(selectedTableIdForEdit);
+        try {
+            const currentDate = new Date();
+            setTableDataEdit((prevData) => ({
+                ...prevData,
+                updatedAt: currentDate,
+            }));
+            console.log(tableDataEdit);
+            await axios.put(`http://localhost:3002/table/mod/${selectedTableIdForEdit}`, tableDataEdit);
+            console.log('Changed table ');
+            closeEditModalTable();
+            fetchTables();
+        } catch (error) {
+            console.error(error);
+            // Handle edit error
+        }
+    };
+
+    const confirmCreateTable = async () => {
+        console.log(tableDataCreate)
+        
+        try {
+            await axios.post(`http://localhost:3002/table/${createTableRestaurant}`, tableDataCreate);
+            console.log('Created table');
+            fetchTables();
+            closeCreateModalTable();
 
         } catch (error) {
             console.error(error);
@@ -756,6 +1008,9 @@ function AdminPage() {
                                 <Button variant="contained" color="primary" onClick={confirmCreate}>
                                     Create
                                 </Button>
+                                <Button variant="contained" color="primary" onClick={() => closeCreateModal()}>
+                                    Close
+                                </Button>
                             </div>
                         </div>
                     </Modal>
@@ -860,7 +1115,7 @@ function AdminPage() {
                                                 required
                                             />
                                         </FormControl>
-                                        <Button onClick={(event) => deletePhotoEdit(event,index)}><FontAwesomeIcon icon={faTrash} /></Button>
+                                        <Button onClick={(event) => deletePhotoEdit(event, index)}><FontAwesomeIcon icon={faTrash} /></Button>
                                     </div>
                                 ))}
 
@@ -870,6 +1125,9 @@ function AdminPage() {
 
                                 <Button variant="contained" color="primary" onClick={confirmEditRest}>
                                     Change
+                                </Button>
+                                <Button variant="contained" color="primary" onClick={() => closeEditModalRest()}>
+                                    Close
                                 </Button>
                             </div>
                         </div>
@@ -936,7 +1194,7 @@ function AdminPage() {
                                 <Select value={createRestTable} onChange={(event) => setCreateRestTable(event.target.value)}>
                                     {tableOptions}
                                 </Select>
-                                
+
                                 {restDataCreate.photos.length > 0 && restDataCreate.photos.map((photo, index) => (
                                     <div key={photo} className='ingredient__wrappper'>
                                         <FormControl>
@@ -948,7 +1206,7 @@ function AdminPage() {
                                                 required
                                             />
                                         </FormControl>
-                                        <Button onClick={(event) => deletePhotoCreate(event,index)}><FontAwesomeIcon icon={faTrash} /></Button>
+                                        <Button onClick={(event) => deletePhotoCreate(event, index)}><FontAwesomeIcon icon={faTrash} /></Button>
                                     </div>
                                 ))}
 
@@ -958,6 +1216,9 @@ function AdminPage() {
 
                                 <Button variant="contained" color="primary" onClick={confirmCreateRest}>
                                     Create
+                                </Button>
+                                <Button variant="contained" color="primary" onClick={() => closeCreateModalRest()}>
+                                    Close
                                 </Button>
                             </div>
                         </div>
@@ -979,7 +1240,240 @@ function AdminPage() {
                 </div>
             </TabPanel>
             <TabPanel value={value} index={3}>
-                {/* Tables content */}
+                <div>
+                    <ul className="rest__list">
+                        {tables &&
+                            tables.map((table, index) => (
+                                <li key={table._id}>
+                                    <span className="rest__title">
+                                        Стіл {index + 1} Місць - {table.capacity} {'  '}
+                                        <span className="rest__icons">
+                                            <FontAwesomeIcon icon={faTrash} onClick={() => openDeleteConfirmationTable(table._id)} />
+                                            <FontAwesomeIcon icon={faPencil} onClick={() => openEditModalTable(table._id)} />
+                                        </span>
+                                    </span>
+                                    <ul>
+                                        {table.tableNumbers.map((smallTable) => (
+                                            <li>
+                                                Номер столу {smallTable.number}
+                                                <ul>
+                                                    {smallTable.unavailableDates && smallTable.unavailableDates.map((unDate) => (
+                                                        <p>{unDate}</p>
+                                                    ))}
+                                                </ul>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </li>
+                            ))}
+                    </ul>
+                    <Button onClick={() => { openCreateModalTable() }}>Create Table</Button>
+                    <Modal open={editModalOpenTable} onClose={closeEditModalTable}>
+                        <div className="modal__content__edit">
+                            <div className="modal__edit">
+                                <FormControl>
+                                    <InputLabel shrink>Id</InputLabel>
+                                    <TextField
+                                        disabled
+                                        value={tableDataEdit._id}
+                                        onChange={(event) => handleInputChangeTable(event, "_id")}
+                                        required
+                                    />
+                                </FormControl>
+                                <FormControl>
+                                    <InputLabel shrink>Capacity</InputLabel>
+                                    <TextField
+                                        value={tableDataEdit.capacity}
+                                        onChange={(event) => handleInputChangeTable(event, "capacity")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                <FormControl>
+                                    <InputLabel shrink>Created At</InputLabel>
+                                    <TextField
+                                        disabled
+                                        value={tableDataEdit.createdAt}
+                                        onChange={(event) => handleInputChangeTable(event, "createdAt")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                {tableDataEdit.tableNumbers?.map((smallTable, index) => (
+                                    <div key={smallTable._id} className='ingredient__wrappper'>
+                                        <FormControl>
+                                            <InputLabel shrink>{`Table ${index + 1} Name`}</InputLabel>
+                                            <TextField
+                                                label={`Table ${index + 1} Id`}
+                                                value={smallTable._id}
+                                                onChange={(event) => handleTableChangeTable(event, index, "_id")}
+                                                required
+                                            />
+                                        </FormControl>
+
+                                        <FormControl>
+                                            <InputLabel shrink>{`Table ${index + 1} Number`}</InputLabel>
+                                            <TextField
+                                                type="number"
+                                                label={`Table ${index + 1} Number`}
+                                                value={smallTable.number}
+                                                onChange={(event) => handleTableChangeTable(event, index, "number")}
+                                                required
+                                            />
+                                        </FormControl>
+
+                                        <FormControl>
+                                            <InputLabel shrink>{`Table ${index + 1} Dates`}</InputLabel>
+                                            {smallTable.unavailableDates?.map((tableDate, dateIndex) => (
+                                                <TextField
+                                                    key={dateIndex}
+                                                    label={`Table ${index + 1} Date`}
+                                                    value={tableDate}
+                                                    // onChange={...}
+                                                    required
+                                                    InputProps={{
+                                                        endAdornment: (
+                                                            <InputAdornment position="end">
+                                                                <FontAwesomeIcon
+                                                                    icon={faTrash}
+                                                                    onClick={() => deleteDate(index, dateIndex)}
+                                                                    style={{ cursor: 'pointer' }}
+                                                                />
+                                                            </InputAdornment>
+                                                        ),
+                                                    }}
+                                                />
+                                            ))}
+                                        </FormControl>
+                                        <Button onClick={() => deleteSmallTable(index)}><FontAwesomeIcon icon={faTrash} /></Button>
+                                    </div>
+                                ))}
+
+                                <Button variant="contained" color="primary" onClick={addSmallTable}>
+                                    Add Table
+                                </Button>
+
+                                <Button variant="contained" color="primary" onClick={confirmEditTable}>
+                                    Change
+                                </Button>
+                                <Button variant="contained" color="primary" onClick={() => closeEditModalTable()}>
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
+                    </Modal>
+                    <Modal open={createModalOpenTable} onClose={closeCreateModalTable}>
+                        <div className="modal__content__edit">
+                            <div className="modal__edit">
+                                {/* <FormControl>
+                                    <InputLabel shrink>Id</InputLabel>
+                                    <TextField
+                                        disabled
+                                        value={tableDataEdit._id}
+                                        onChange={(event) => handleInputChangeTable(event, "_id")}
+                                        required
+                                    />
+                                </FormControl> */}
+                                <Select value={createTableRestaurant} onChange={(event) => setCreateTableRestaurant(event.target.value)}>
+                                    {restOptionsTable}
+                                </Select>
+                                <FormControl>
+                                    <InputLabel shrink>Capacity</InputLabel>
+                                    <TextField
+                                        value={tableDataEdit.capacity}
+                                        onChange={(event) => handleInputChangeTableCreate(event, "capacity")}
+                                        required
+                                    />
+                                </FormControl>
+
+                                {/* <FormControl>
+                                    <InputLabel shrink>Created At</InputLabel>
+                                    <TextField
+                                        disabled
+                                        value={tableDataEdit.createdAt}
+                                        onChange={(event) => handleInputChangeTableCreate(event, "createdAt")}
+                                        required
+                                    />
+                                </FormControl> */}
+
+                                {tableDataCreate.tableNumbers?.map((smallTable, index) => (
+                                    <div key={smallTable._id} className='ingredient__wrappper'>
+                                        {/* <FormControl>
+                                            <InputLabel shrink>{`Table ${index + 1} Name`}</InputLabel>
+                                            <TextField
+                                                label={`Table ${index + 1} Id`}
+                                                value={smallTable._id}
+                                                onChange={(event) => handleTableChangeTableCreate(event, index, "_id")}
+                                                required
+                                            />
+                                        </FormControl> */}
+
+                                        <FormControl>
+                                            <InputLabel shrink>{`Table ${index + 1} Number`}</InputLabel>
+                                            <TextField
+                                                type="number"
+                                                label={`Table ${index + 1} Number`}
+                                                value={smallTable.number}
+                                                onChange={(event) => handleTableChangeTableCreate(event, index, "number")}
+                                                required
+                                            />
+                                        </FormControl>
+
+                                        <FormControl>
+                                            <InputLabel shrink>{`Table ${index + 1} Dates`}</InputLabel>
+                                            {smallTable.unavailableDates?.map((tableDate, dateIndex) => (
+                                                <TextField
+                                                    key={dateIndex}
+                                                    label={`Table ${index + 1} Date`}
+                                                    value={tableDate}
+                                                    // onChange={...}
+                                                    required
+                                                    InputProps={{
+                                                        endAdornment: (
+                                                            <InputAdornment position="end">
+                                                                <FontAwesomeIcon
+                                                                    icon={faTrash}
+                                                                    onClick={() => deleteDateCreate(index, dateIndex)}
+                                                                    style={{ cursor: 'pointer' }}
+                                                                />
+                                                            </InputAdornment>
+                                                        ),
+                                                    }}
+                                                />
+                                            ))}
+                                        </FormControl>
+                                        <Button onClick={() => deleteSmallTableCreate(index)}><FontAwesomeIcon icon={faTrash} /></Button>
+                                    </div>
+                                ))}
+
+                                <Button variant="contained" color="primary" onClick={addSmallTableCreate}>
+                                    Add Table
+                                </Button>
+
+                                <Button variant="contained" color="primary" onClick={confirmCreateTable}>
+                                    Create
+                                </Button>
+                                <Button variant="contained" color="primary" onClick={() => closeCreateModalTable()}>
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
+                    </Modal>
+                    <Dialog open={deleteConfirmationOpenTable} onClose={closeDeleteConfirmationTable}>
+                        <DialogTitle>Confirmation</DialogTitle>
+                        <DialogContent>
+                            <Typography>Are you sure you want to delete this restaurant?</Typography>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={closeDeleteConfirmationTable} color="primary">
+                                Cancel
+                            </Button>
+                            <Button onClick={confirmDeleteTable} color="primary" autoFocus>
+                                Delete
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                </div>
             </TabPanel>
         </>
     );
